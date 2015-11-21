@@ -1,0 +1,92 @@
+---
+title: "Practical Machine Learning: Activity Monitoring Predictions"
+author: "Jose L Rivera"
+date: "November 25, 2015"
+output: html_document
+---
+
+## Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. The goal of your project is to predict the manner in which they did the exercise.
+
+## Get and Load
+In order to get started we will first load the required libraries.
+
+```{r, echo = TRUE, message = FALSE, warning = FALSE}
+library(caret)
+library(randomForest)
+```
+
+Now we will extract the data from the repository, download and store them in their respective dataframes. This will be the basis from the training, testing and final prediction data.
+
+```{r, echo = TRUE}
+trainURL <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testURL <-  "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+download.file(url = trainURL, destfile = "training.csv")
+download.file(url = testURL, destfile = "testing.csv")
+
+training <- read.csv("training.csv", na.strings = c("NA","#DIV/0!",""))
+samples <- read.csv("testing.csv", na.strings = c("NA","#DIV/0!",""))
+```
+
+## Data Cleansing
+The training dataset contains **19,622 observations** over **160 variables**. Many of these variables are not useful for our analysis because they contains *high volume of NAs* or they have *near zero variance*. At the end of this data cleansing process we will have a dataset better fir for predicting our variable called **classe**.
+
+```{r, echo = TRUE}
+# Remove variables with near zero variance
+nzv <- nearZeroVar(training)
+training <- training[, -nzv]
+samples <- samples[, -nzv]
+
+# Remove variables with high volume of NAs
+HVNA <- sapply(training, function(x) mean(is.na(x))) > 0.7
+training <- training[, HVNA == FALSE]
+samples <- samples[, HVNA == FALSE]
+
+# remove first and last variables
+training <- training[, c(-1,-58)]
+samples <- samples[, c(-1,-58)]
+
+# Split data 60/40 for model validation
+inTrain <- createDataPartition(y = training$classe, p = 0.6, list = FALSE)
+
+# Split training data into Training and Testing
+Training <- training[inTrain, ]
+Testing <- training[-inTrain, ]
+```
+
+## Model Building
+Now the we have our data in a better shape we can start building our prediction model. In this exercise we will use a Random Forest algorithm and will apply a K-Fold cross validation with k = 5.
+
+```{r, echo = TRUE}
+set.seed(2015)
+# K-Fold Cross Validation
+crossV <- trainControl(method = "cv", number = 5)
+
+# Fit model on Training data
+model <- train(classe ~ ., data = Training, trControl = crossV, method = "rf")
+
+# print model
+model
+```
+
+We have our trained model, lets evaluate the performance over the testing set.
+
+```{r, echo = TRUE}
+# Predit using Testing set of training data
+predictions <- predict(model, Testing)
+
+confusionMatrix(predictions, Testing$classe)
+```
+
+As we can see from the *Confusion Matrix and Statistics* report, the estimated accuracy of the model is 99.87% with a out-of-sample error of .13% 
+
+## Predictions
+Now, lets apply the model to the samples data set to predict our final results.
+
+```{r, echo = TRUE}
+# Predict levels for testing data on samples
+predictions <- predict(model, samples)
+predictions
+
+```
