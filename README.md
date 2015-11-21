@@ -18,4 +18,4 @@ The data for this project come from this source: http://groupware.les.inf.puc-ri
 
 ## Assignment
 
-You can find the project files and results in the **[gh-pages](https://github.com/sqlconqueror/PracticalMachineLearning/tree/gh-pages)** branch.
+You can find the project files **[here](https://github.com/sqlconqueror/PracticalMachineLearning)** and results/report **[here](http://sqlconqueror.github.io/PracticalMachineLearning/PredictionReport.html)**
